@@ -35,10 +35,14 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.nextcloud.client.account.User
 import com.nextcloud.client.account.UserAccountManager
+import com.nextcloud.client.files.downloader.TransferManagerConnection
+import com.nextcloud.client.files.downloader.UploadRequest
 import com.owncloud.android.R
 import com.owncloud.android.datamodel.ArbitraryDataProvider
 import com.owncloud.android.datamodel.FileDataStorageManager
 import com.owncloud.android.datamodel.OCFile
+import com.owncloud.android.datamodel.UploadsStorageManager
+import com.owncloud.android.db.OCUpload
 import com.owncloud.android.files.services.FileUploader
 import com.owncloud.android.lib.common.utils.Log_OC
 import com.owncloud.android.operations.UploadFileOperation
@@ -158,19 +162,23 @@ class ContactsBackupWork(
                 }
             }
         }
-        FileUploader.uploadNewFile(
-            applicationContext,
-            user.toPlatformAccount(),
-            file.absolutePath,
-            backupFolder + filename,
-            FileUploader.LOCAL_BEHAVIOUR_MOVE,
-            null,
-            true,
-            UploadFileOperation.CREATED_BY_USER,
-            false,
-            false,
-            FileUploader.NameCollisionPolicy.RENAME
-        )
+
+        val sourcePath = file.absolutePath
+        val destinationPath = backupFolder + file
+        val upload = OCUpload(sourcePath, destinationPath, user.accountName)
+        upload.fileSize = file.length()
+        upload.nameCollisionPolicy = FileUploader.NameCollisionPolicy.RENAME
+        upload.isCreateRemoteFolder = true
+        upload.createdBy = UploadFileOperation.CREATED_BY_USER
+        upload.localAction = FileUploader.LOCAL_BEHAVIOUR_MOVE
+        upload.isUseWifiOnly = false
+        upload.isWhileChargingOnly = false
+        upload.uploadStatus = UploadsStorageManager.UploadStatus.UPLOAD_IN_PROGRESS
+
+        val request = UploadRequest(user, upload)
+
+        val connection = TransferManagerConnection(applicationContext, user)
+        connection.enqueue(request)
     }
 
     private fun expireFiles(daysToExpire: Int, backupFolderString: String, user: User) { // -1 disables expiration

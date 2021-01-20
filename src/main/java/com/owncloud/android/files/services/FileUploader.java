@@ -458,7 +458,7 @@ public class FileUploader extends Service
         int createdBy,
         OCFile file,
         boolean disableRetries
-                               ) {
+    ) {
         OCUpload ocUpload = new OCUpload(file, user.toPlatformAccount());
         ocUpload.setFileSize(file.getFileLength());
         ocUpload.setNameCollisionPolicy(nameCollisionPolicy);
@@ -1073,17 +1073,19 @@ public class FileUploader extends Service
             accountMatch = account == null || account.name.equals(failedUpload.getAccountName());
             resultMatch = uploadResult == null || uploadResult == failedUpload.getLastResult();
             if (accountMatch && resultMatch) {
+                // 1. extract failed upload owner account in efficient name (expensive query)
                 if (currentAccount == null || !currentAccount.name.equals(failedUpload.getAccountName())) {
                     currentAccount = failedUpload.getAccount(accountManager);
                 }
 
                 if (!new File(failedUpload.getLocalPath()).exists()) {
+                    // 2A. for deleted files, mark as permanently failed
                     if (failedUpload.getLastResult() != UploadResult.FILE_NOT_FOUND) {
                         failedUpload.setLastResult(UploadResult.FILE_NOT_FOUND);
                         uploadsStorageManager.updateUpload(failedUpload);
                     }
                 } else {
-
+                    // 2B. for existing local files, try restarting it if possible
                     if (!isPowerSaving && gotNetwork && canUploadBeRetried(failedUpload, gotWifi, charging)) {
                         retryUpload(context, currentAccount, failedUpload);
                     }

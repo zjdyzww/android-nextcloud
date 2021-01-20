@@ -22,6 +22,9 @@ package com.nextcloud.client.files.downloader
 import com.owncloud.android.datamodel.OCFile
 import java.util.UUID
 
+/**
+ * Transfer manager provides API to upload and download files.
+ */
 interface TransferManager {
 
     /**
@@ -48,7 +51,7 @@ interface TransferManager {
     val status: Status
 
     /**
-     * Register transfer progress listener. Registration is idempotent - listener can be registered only once.
+     * Register transfer progress listener. Registration is idempotent - a listener will be registered only once.
      */
     fun registerTransferListener(listener: (Transfer) -> Unit)
 
@@ -58,7 +61,7 @@ interface TransferManager {
     fun removeTransferListener(listener: (Transfer) -> Unit)
 
     /**
-     * Register transfer manager status listener. Registration is idempotent - listener can be registered only once.
+     * Register transfer manager status listener. Registration is idempotent - a listener will be registered only once.
      */
     fun registerStatusListener(listener: (Status) -> Unit)
 
